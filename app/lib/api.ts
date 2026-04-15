@@ -207,7 +207,7 @@ export async function getAdminRecentUsers(limit?: number): Promise<AdminUserRow[
 }
 
 /** Liste utilisateurs avec recherche et pagination (admin). */
-export async function getAdminUsers(params: { 
+export async function getAdminUsers(params: {
   limit?: number;
   offset?: number;
   search?: string;

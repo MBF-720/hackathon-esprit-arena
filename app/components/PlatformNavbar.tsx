@@ -15,6 +15,7 @@ export default function PlatformNavbar() {
   const [userLoaded, setUserLoaded] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const t = translations[lang];
@@ -55,10 +56,20 @@ export default function PlatformNavbar() {
             <p className="text-[10px] text-cyan-400 uppercase tracking-wider leading-tight font-medium">{t.competitiveHub}</p>
           </div>
         </Link>
+        <div className="flex items-center gap-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-white/70 hover:text-white"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+            </svg>
+          </button>
+        </div>
 
-        {/* Liens centraux */}
-        <nav className="flex items-center gap-6 md:gap-8">
-          {/* Home - visible only for regular users and during loading */}
+        {/* Liens centraux - cachés sur mobile */}
+        <nav className="hidden lg:flex items-center gap-8">
           {!userLoaded || (user && user?.role !== "ADMIN" && user?.role !== "COMPANY") ? (
             <Link href={user ? "/home" : "/"} className={`text-sm font-medium transition-colors ${(user ? isActive("/home") : isActive("/") && pathname === "/") ? "text-cyan-400 border-b-2 border-cyan-400 pb-0.5" : "text-white hover:text-cyan-400"}`}>
               {t.nav.home}
@@ -76,21 +87,18 @@ export default function PlatformNavbar() {
             {t.nav.leaderboards}
           </Link>
 
-          {/* Profile - visible only for regular users and during loading */}
           {!userLoaded || (user && user?.role !== "ADMIN" && user?.role !== "COMPANY") ? (
             <Link href="/profile" className={`text-sm font-medium transition-colors ${isActive("/profile") ? "text-cyan-400 border-b-2 border-cyan-400 pb-0.5" : "text-white hover:text-cyan-400"}`}>
               {t.nav.profile}
             </Link>
           ) : null}
 
-          {/* Dashboard - visible only for admin */}
           {userLoaded && user?.role === "ADMIN" && (
             <Link href="/dashboard" className={`text-sm font-medium transition-colors ${isActive("/dashboard") ? "text-cyan-400 border-b-2 border-cyan-400 pb-0.5" : "text-amber-400 hover:text-amber-300"}`}>
               Dashboard
             </Link>
           )}
 
-          {/* Company Dashboard - visible only for company */}
           {userLoaded && user?.role === "COMPANY" && (
             <Link href="/company-dashboard" className={`text-sm font-medium transition-colors ${isActive("/company-dashboard") ? "text-cyan-400 border-b-2 border-cyan-400 pb-0.5" : "text-emerald-400 hover:text-emerald-300"}`}>
               Company Dashboard
@@ -175,6 +183,40 @@ export default function PlatformNavbar() {
           ))}
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-[#0f1419] border-t border-white/10 p-4 space-y-4 animate-in fade-in slide-in-from-top-4 duration-200">
+          <nav className="flex flex-col gap-4">
+            <Link href={user ? "/home" : "/"} onClick={() => setMobileMenuOpen(false)} className={`text-sm font-medium ${isActive("/home") || (isActive("/") && pathname === "/") ? "text-cyan-400" : "text-white"}`}>
+              {t.nav.home}
+            </Link>
+            <Link href="/hackathon" onClick={() => setMobileMenuOpen(false)} className={`text-sm font-medium ${isActive("/hackathon") ? "text-cyan-400" : "text-white"}`}>
+              {t.nav.hackathon}
+            </Link>
+            <Link href="/classements" prefetch={true} onClick={() => setMobileMenuOpen(false)} className={`text-sm font-medium ${isActive("/classements") ? "text-cyan-400" : "text-white"}`}>
+              {t.nav.leaderboards}
+            </Link>
+            <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className={`text-sm font-medium ${isActive("/profile") ? "text-cyan-400" : "text-white"}`}>
+              {t.nav.profile}
+            </Link>
+            {user?.role === "ADMIN" && (
+              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-amber-400">
+                Dashboard Admin
+              </Link>
+            )}
+            {user?.role === "COMPANY" && (
+              <Link href="/company-dashboard" onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium text-emerald-400">
+                Dashboard Entreprise
+              </Link>
+            )}
+          </nav>
+          <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+            <div className="text-[10px] text-white/30 uppercase tracking-widest">Connecté en tant que:</div>
+            <div className="text-[10px] text-cyan-400 font-bold">{user?.firstName} {user?.lastName}</div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

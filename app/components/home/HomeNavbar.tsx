@@ -88,8 +88,8 @@ export default function HomeNavbar({ user: initialUser }: HomeNavbarProps) {
             >
               &gt;_
             </div>
-            <span className="text-lg md:text-xl font-bold text-[var(--text-primary)]">
-              Arena <span className="text-[var(--accent)]">of Coders</span>
+            <span className="text-base sm:text-lg md:text-xl font-bold text-[var(--text-primary)]">
+              Arena <span className="text-[var(--accent)]">Of Coders</span>
             </span>
           </Link>
 
@@ -208,9 +208,9 @@ export default function HomeNavbar({ user: initialUser }: HomeNavbarProps) {
                 <div className="flex items-center gap-3">
                   <Link 
                     href={user.role === 'ADMIN' ? '/dashboard' : user.role === 'COMPANY' ? '/company-dashboard' : '/home'}
-                    className="hidden md:block bg-gradient-to-r from-[var(--accent)] to-[var(--accent-2)] text-black px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-all shadow-[0_0_15px_rgba(34,211,238,0.3)]"
+                    className="bg-gradient-to-r from-[var(--accent)] to-[var(--accent-2)] text-black px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-all shadow-[0_0_15px_rgba(34,211,238,0.3)]"
                   >
-                    {user.role === 'ADMIN' ? 'Admin Panel' : user.role === 'COMPANY' ? 'Company HQ' : 'Homepage'}
+                    {user.role === 'ADMIN' ? 'Admin' : user.role === 'COMPANY' ? 'HQ' : 'Home'}
                   </Link>
                   <div className="relative" ref={profileRef}>
                     <button
@@ -275,13 +275,23 @@ export default function HomeNavbar({ user: initialUser }: HomeNavbarProps) {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className={`lg:hidden py-4 border-t ${isLight ? "border-black/10" : "border-white/10"}`}>
-            <nav className="flex flex-col gap-2">
-              <Link href="/hackathon" onClick={() => setMobileMenuOpen(false)} className={`px-4 py-2 text-[var(--text-primary)] rounded-lg ${isLight ? "hover:bg-black/5" : "hover:bg-white/10"}`}>Hackathon</Link>
-              <Link href="/classements" prefetch={true} onClick={() => setMobileMenuOpen(false)} className={`px-4 py-2 text-[var(--text-primary)] rounded-lg ${isLight ? "hover:bg-black/5" : "hover:bg-white/10"}`}>Classements</Link>
-              <Link href="/#solutions" onClick={() => setMobileMenuOpen(false)} className={`px-4 py-2 text-[var(--text-primary)] rounded-lg ${isLight ? "hover:bg-black/5" : "hover:bg-white/10"}`}>Solutions</Link>
-              <Link href="/#pricing" onClick={() => setMobileMenuOpen(false)} className={`px-4 py-2 text-[var(--text-primary)] rounded-lg ${isLight ? "hover:bg-black/5" : "hover:bg-white/10"}`}>Tarifs</Link>
-              <Link href="/chat" onClick={() => setMobileMenuOpen(false)} className={`px-4 py-2 text-[var(--text-primary)] rounded-lg ${isLight ? "hover:bg-black/5" : "hover:bg-white/10"}`}>Chat</Link>
+          <div className={`lg:hidden fixed inset-0 top-[64px] md:top-[80px] z-50 animate-in fade-in slide-in-from-top-4 duration-300 ${isLight ? "bg-white/95" : "bg-[rgba(10,15,26,0.98)]"} backdrop-blur-xl`}>
+            <nav className="flex flex-col p-6 gap-4">
+              <Link href="/hackathon" onClick={() => setMobileMenuOpen(false)} className={`text-xl font-bold px-4 py-3 border-b ${isLight ? "border-black/5" : "border-white/5"} text-[var(--text-primary)] transition-colors active:text-[var(--accent)]`}>Hackathon</Link>
+              <Link href="/classements" prefetch={true} onClick={() => setMobileMenuOpen(false)} className={`text-xl font-bold px-4 py-3 border-b ${isLight ? "border-black/5" : "border-white/5"} text-[var(--text-primary)] transition-colors active:text-[var(--accent)]`}>Classements</Link>
+              <Link href="/#solutions" onClick={() => setMobileMenuOpen(false)} className={`text-xl font-bold px-4 py-3 border-b ${isLight ? "border-black/5" : "border-white/5"} text-[var(--text-primary)] transition-colors active:text-[var(--accent)]`}>Solutions</Link>
+              <Link href="/#pricing" onClick={() => setMobileMenuOpen(false)} className={`text-xl font-bold px-4 py-3 border-b ${isLight ? "border-black/5" : "border-white/5"} text-[var(--text-primary)] transition-colors active:text-[var(--accent)]`}>Tarifs</Link>
+              <Link href="/chat" onClick={() => setMobileMenuOpen(false)} className={`text-xl font-bold px-4 py-3 border-b ${isLight ? "border-black/5" : "border-white/5"} text-[var(--text-primary)] transition-colors active:text-[var(--accent)]`}>Chat</Link>
+              
+              {!user && (
+                <Link 
+                  href="/signup" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="mt-4 bg-[var(--accent)] text-black text-center py-4 rounded-xl font-black uppercase tracking-widest shadow-lg"
+                >
+                  Lancer l&apos;App
+                </Link>
+              )}
             </nav>
           </div>
         )}

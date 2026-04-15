@@ -12,9 +12,9 @@ export default function SignUpPage() {
   const [githubUrl, setGithubUrl] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [isCompany, setIsCompany] = useState(false);
-  const [companyName, setCompanyName] = useState('');
-  const [companyDescription, setCompanyDescription] = useState('');
+  // const [isCompany, setIsCompany] = useState(false);
+  // const [companyName, setCompanyName] = useState('');
+  // const [companyDescription, setCompanyDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -46,6 +46,7 @@ export default function SignUpPage() {
       const res = (await signUpWithResume(formData)) as { email?: string; message?: string; tokens?: { accessToken?: string } };
       
       // Si c'est une entreprise, on stocke l'intention pour après la vérification/login
+      /* 
       if (isCompany && companyName) {
         localStorage.setItem('pending_company_request', JSON.stringify({
           companyName,
@@ -53,13 +54,14 @@ export default function SignUpPage() {
           email: email.toLowerCase()
         }));
       }
+      */
       if (res?.tokens?.accessToken) {
         saveToken(res.tokens.accessToken);
       }
       const targetEmail = res?.email ?? email;
-      setMessage(res?.message ?? 'Compte créé. Un code de vérification a été envoyé à votre email.');
+      setMessage('Compte créé avec succès ! Accès immédiat à l’Arène...');
       setTimeout(() => {
-        window.location.assign(`/verify?email=${encodeURIComponent(targetEmail)}`);
+        window.location.assign('/hackathon');
       }, 1500);
     } catch (err: unknown) {
       const msg = err && typeof err === 'object' && 'message' in err ? String((err as { message?: string }).message) : 'ENROLLMENT FAILED. PROTOCOL ERROR.';
@@ -70,7 +72,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden font-sans py-8 md:py-20">
       
       {/* 1. Dynamic Background Elements */}
       <div className="absolute inset-0 z-0">
@@ -83,10 +85,10 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      <div className="z-10 w-full max-w-lg">
+      <div className="z-10 w-full max-w-lg flex flex-col items-center">
         
         {/* 2. Modern Header */}
-        <div className="mb-8 flex flex-col items-center">
+        <div className="mb-6 md:mb-8 flex flex-col items-center">
           <div className="relative mb-4">
             {/* User Plus / Hackathon Icon */}
             <svg className="w-16 h-16 text-cyan-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.5)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -105,7 +107,7 @@ export default function SignUpPage() {
         </div>
 
         {/* 3. Glassmorphism Card */}
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2rem] shadow-2xl relative">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-5 md:p-8 rounded-[1.5rem] md:rounded-[2rem] shadow-2xl relative w-full sm:w-auto mx-4 sm:mx-0">
           
           <form onSubmit={onSubmit} className="space-y-5">
             {/* Name Grid */}
@@ -198,48 +200,7 @@ export default function SignUpPage() {
               />
             </div>
 
-            <div className="pt-4 pb-2">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <div className="relative">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only" 
-                    checked={isCompany}
-                    onChange={(e) => setIsCompany(e.target.checked)}
-                  />
-                  <div className={`w-10 h-5 rounded-full transition-colors ${isCompany ? 'bg-cyan-500' : 'bg-white/10'}`}></div>
-                  <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${isCompany ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                </div>
-                <span className="text-xs font-bold text-white uppercase tracking-wider group-hover:text-cyan-400 transition-colors">
-                  S&apos;inscrire en tant qu&apos;Entreprise
-                </span>
-              </label>
-            </div>
-
-            {isCompany && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-cyan-400/80 tracking-[0.2em] ml-1">NOM DE L&apos;ENTREPRISE</label>
-                  <input 
-                    placeholder="MA SOCIÉTÉ" 
-                    value={companyName} 
-                    onChange={(e) => setCompanyName(e.target.value)} 
-                    className="w-full bg-[#0a0f1e]/60 border border-white/10 p-4 rounded-xl text-white placeholder:text-white/10 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-sm"
-                    required={isCompany}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-cyan-400/80 tracking-[0.2em] ml-1">DESCRIPTION DE L&apos;ENTREPRISE</label>
-                  <textarea 
-                    placeholder="DÉCRIVEZ VOTRE ACTIVITÉ..." 
-                    value={companyDescription} 
-                    onChange={(e) => setCompanyDescription(e.target.value)} 
-                    className="w-full bg-[#0a0f1e]/60 border border-white/10 p-4 rounded-xl text-white placeholder:text-white/10 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition-all font-mono text-sm min-h-[100px]"
-                    required={isCompany}
-                  />
-                </div>
-              </div>
-            )}
+            {/* Company Registration Section Removed */}
 
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-cyan-400/80 tracking-[0.2em] ml-1">LINKEDIN (optionnel)</label>

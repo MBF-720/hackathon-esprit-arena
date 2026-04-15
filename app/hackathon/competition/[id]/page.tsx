@@ -10,6 +10,7 @@ import {
   getMyParticipation,
   getMyEquipe,
   joinSolo,
+  createEquipe,
   inviteToEquipe,
   searchUsersForInvite,
   joinTeamChat,
@@ -53,11 +54,17 @@ export default function CompetitionDetailsPage() {
   const [joiningChat, setJoiningChat] = useState(false);
   const [markingReady, setMarkingReady] = useState(false);
 
+  // Registration flow state
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [regMode, setRegMode] = useState<"SOLO" | "TEAM" | null>(null);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [creatingTeam, setCreatingTeam] = useState(false);
+
   const refreshEquipe = async () => {
     try {
       const eq = await getMyEquipe(id);
       setEquipe(eq);
-    } catch {}
+    } catch { }
   };
 
   useEffect(() => {
@@ -92,8 +99,27 @@ export default function CompetitionDetailsPage() {
     try {
       await joinSolo(id);
       setIsJoined(true);
+      setIsRegistering(false);
     } catch (err: any) {
       alert(err?.message ?? "Erreur");
+    }
+  };
+
+  const handleCreateTeam = async () => {
+    if (!newTeamName.trim()) return;
+    setCreatingTeam(true);
+    try {
+      const newEq = await createEquipe(id, newTeamName.trim());
+      setEquipe(newEq);
+      setIsJoined(true);
+      setEquipeRole("LEADER");
+      setIsRegistering(false);
+      setRegMode(null);
+      setNewTeamName("");
+    } catch (err: any) {
+      alert(err?.message ?? "Erreur lors de la création de l'équipe");
+    } finally {
+      setCreatingTeam(false);
     }
   };
 
@@ -271,11 +297,10 @@ export default function CompetitionDetailsPage() {
                 <div>
                   <div className="flex items-center gap-3">
                     <h3 className="text-2xl font-black italic uppercase text-white tracking-tight">{equipe.name}</h3>
-                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                      equipe.status === "READY" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20" :
-                      equipe.status === "PARTICIPATING" ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/20" :
-                      "bg-amber-500/20 text-amber-400 border border-amber-500/20"
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${equipe.status === "READY" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20" :
+                        equipe.status === "PARTICIPATING" ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/20" :
+                          "bg-amber-500/20 text-amber-400 border border-amber-500/20"
+                      }`}>
                       {equipe.status === "FORMING"
                         ? `${memberCount}/${TEAM_SIZE_MAX} membres (min. ${TEAM_SIZE_MIN})`
                         : equipe.status === "READY"
@@ -346,9 +371,8 @@ export default function CompetitionDetailsPage() {
                       <p className="text-sm font-bold text-white truncate">{m.user.firstName} {m.user.lastName}</p>
                       <p className="text-[10px] text-white/30">{m.user.email}</p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${
-                      m.role === "LEADER" ? "bg-amber-500/20 text-amber-400" : "bg-white/5 text-white/30"
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${m.role === "LEADER" ? "bg-amber-500/20 text-amber-400" : "bg-white/5 text-white/30"
+                      }`}>
                       {m.role}
                     </span>
                   </div>
@@ -483,19 +507,12 @@ export default function CompetitionDetailsPage() {
                 <div className="space-y-6">
                   <p className="text-sm text-white/60 leading-relaxed font-light italic">
                     {isRunning
-                      ? "Le hackathon est en cours ! Rejoignez votre salle dédiée."
+                      ? "Le hackathon est en cours ! Consultez les détails et travaillez avec votre équipe."
                       : equipe
                         ? `Votre équipe "${equipe.name}" est ${equipe.status === "READY" ? "validée (prête)" : "en formation"}. ${isLeader ? `Invitez entre ${TEAM_SIZE_MIN} et ${TEAM_SIZE_MAX} membres puis validez le groupe.` : "En attente du leader."}`
-                        : "Vous êtes en file solo. Vous serez assigné à une équipe au démarrage."}
+                        : "Le hackathon démarrera bientôt. Préparez-vous !"}
                   </p>
-                  {isRunning ? (
-                    <Link
-                      href="/hackathon/room-general"
-                      className="block w-full bg-cyan-500 hover:bg-cyan-400 text-black p-4 rounded-2xl font-black uppercase tracking-[0.2em] text-center transition-all shadow-xl shadow-cyan-500/20 active:scale-95"
-                    >
-                      Rejoindre la salle
-                    </Link>
-                  ) : (
+                  {!isRunning && !equipe && (
                     <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-center">
                       <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Compte à rebours</p>
                       <p className="text-lg font-mono text-cyan-400 mt-1">EN ATTENTE...</p>
@@ -504,17 +521,73 @@ export default function CompetitionDetailsPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-sm text-white/60 leading-relaxed font-light">
-                    La création d&apos;équipe côté leader n&apos;est pas disponible sur le web. Acceptez une invitation reçue par email, ou rejoignez la file solo pour être assigné à une équipe au démarrage.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleJoinSolo}
-                    disabled={!isOpen}
-                    className="block w-full bg-white/[0.03] border border-white/10 hover:border-amber-500/30 hover:text-amber-400 p-4 rounded-2xl font-black uppercase tracking-[0.2em] text-center transition-all active:scale-95 text-white/80 disabled:opacity-50"
-                  >
-                    Rejoindre la file solo
-                  </button>
+                  {!isRegistering ? (
+                    <>
+                      <p className="text-sm text-white/60 leading-relaxed font-light italic">
+                        Prêt à relever le défi ? Inscrivez-vous pour participer à ce hackathon.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setIsRegistering(true)}
+                        disabled={!isOpen}
+                        className="block w-full bg-cyan-500 hover:bg-cyan-400 text-black p-4 rounded-2xl font-black uppercase tracking-[0.2em] text-center transition-all shadow-xl shadow-cyan-500/20 active:scale-95 disabled:opacity-50"
+                      >
+                        S&apos;inscrire au hackathon
+                      </button>
+                    </>
+                  ) : (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                      {regMode === null ? (
+                        <>
+                          <p className="text-[10px] font-black text-white/30 uppercase tracking-widest text-center">Inscription</p>
+                          <div className="grid grid-cols-1 gap-3">
+                            <button
+                              onClick={() => setRegMode("TEAM")}
+                              className="p-6 rounded-2xl bg-violet-500/10 border border-violet-500/30 hover:border-violet-500 hover:bg-violet-500/20 transition-all group text-left"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-black text-white uppercase group-hover:text-violet-400 text-xl tracking-tighter italic">👥 Créer une Équipe</p>
+                                <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400">→</div>
+                              </div>
+                              <p className="text-[10px] text-white/40 uppercase tracking-widest">Prenez le lead, nommez votre groupe et invitez vos amis initiés pour conquérir l&apos;arène ensemble.</p>
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => setIsRegistering(false)}
+                            className="w-full py-2 text-[9px] font-black text-white/20 uppercase hover:text-white/40 transition-all"
+                          >
+                            Annuler
+                          </button>
+                        </>
+                      ) : (
+                        <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                          <p className="text-[10px] font-black text-white/30 uppercase tracking-widest text-center">Nom de votre équipe</p>
+                          <input
+                            type="text"
+                            value={newTeamName}
+                            onChange={(e) => setNewTeamName(e.target.value)}
+                            placeholder="Ex: The Bug Hunters..."
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-violet-500/50 transition-all placeholder:text-white/20 font-medium italic"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setRegMode(null)}
+                              className="px-4 py-3 rounded-xl bg-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest hover:text-white/60 transition-all"
+                            >
+                              Retour
+                            </button>
+                            <button
+                              onClick={handleCreateTeam}
+                              disabled={creatingTeam || !newTeamName.trim()}
+                              className="flex-1 py-3 rounded-xl bg-violet-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-400 transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50"
+                            >
+                              {creatingTeam ? "Création..." : "CONFIRMER →"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

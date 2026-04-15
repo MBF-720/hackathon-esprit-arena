@@ -18,7 +18,7 @@ export const translations = {
     },
     competitiveHub: "COMPETITIVE HUB",
     hero: {
-      aiTag: "Propulsé par l'IA générative",
+      aiTag: "",
       kicker: "Prouvez vos compétences",
       title: "Transformez comment les ",
       titleHighlight1: "talents",
@@ -182,7 +182,7 @@ export const translations = {
     },
     competitiveHub: "COMPETITIVE HUB",
     hero: {
-      aiTag: "Powered by generative AI",
+      aiTag: "",
       kicker: "Prove your skills",
       title: "Transform How ",
       titleHighlight1: "Talents",
@@ -346,7 +346,7 @@ export const translations = {
     },
     competitiveHub: "COMPETITIVE HUB",
     hero: {
-      aiTag: "مدعوم بالذكاء الاصطناعي التوليدي",
+      aiTag: "",
       kicker: "أثبت مهاراتك",
       title: "غيّر كيف يثبت ",
       titleHighlight1: "المواهب",

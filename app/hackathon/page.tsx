@@ -11,6 +11,7 @@ import {
   getMyParticipation, 
   getMyEquipe,
   joinSolo,
+  createEquipe,
   getMyInvitations,
   acceptInvitation,
   declineInvitation,
@@ -67,6 +68,7 @@ export default function UserDashboardPage() {
   const [activeView, setActiveView] = useState<DashboardView>("CATALOGUE");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [rooms, setRooms] = useState<Room[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
@@ -77,6 +79,11 @@ export default function UserDashboardPage() {
   const [search, setSearch] = useState("");
   const [activeTech, setActiveTech] = useState<string>("all");
   const [activeStatus, setActiveStatus] = useState<string>("all");
+
+  // Registration flow state
+  const [creatingEquipeId, setCreatingEquipeId] = useState<string | null>(null);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [creatingTeam, setCreatingTeam] = useState(false);
 
   const loadInvitations = async () => {
     try {
@@ -129,8 +136,25 @@ export default function UserDashboardPage() {
     try {
       await joinSolo(id);
       setMyJoinedIds(prev => new Set(prev).add(id));
+      setCreatingEquipeId(null);
     } catch (err: any) {
       alert(err?.message ?? "Erreur d'inscription");
+    }
+  };
+
+  const handleCreateEquipe = async (id: string) => {
+    if (!newTeamName.trim()) return;
+    setCreatingTeam(true);
+    try {
+      const eq = await createEquipe(id, newTeamName.trim());
+      setMyEquipes(prev => ({ ...prev, [id]: eq }));
+      setMyJoinedIds(prev => new Set(prev).add(id));
+      setCreatingEquipeId(null);
+      setNewTeamName("");
+    } catch (err: any) {
+      alert(err?.message ?? "Erreur lors de la création de l'équipe");
+    } finally {
+      setCreatingTeam(false);
     }
   };
 
@@ -181,9 +205,35 @@ export default function UserDashboardPage() {
     <div className="min-h-screen bg-[#05080f] text-white flex flex-col font-sans selection:bg-cyan-500/30">
       <PlatformNavbar />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* SIDEBAR */}
-        <aside className="w-80 bg-[#090e18] border-r border-white/5 hidden lg:flex flex-col p-8 gap-10">
+      {/* Mobile Sidebar Toggle */}
+      <div className="lg:hidden p-4 border-b border-white/5 bg-[#090e18] flex items-center justify-between sticky top-[64px] z-30">
+        <button 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="flex items-center gap-2 text-[10px] font-black uppercase text-cyan-400 tracking-widest"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
+          Menu Dashboard
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span className="text-[9px] font-black text-white/40 uppercase">Connecté</span>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* SIDEBAR - Responsive drawer on mobile */}
+        <aside className={`
+          fixed inset-y-0 left-0 z-40 w-72 bg-[#090e18] border-r border-white/5 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-0 lg:flex lg:w-80
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          flex flex-col p-8 gap-10
+        `}>
+          {/* Close button for mobile */}
+          <button 
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden absolute top-4 right-4 text-white/30"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
           <div className="space-y-6">
              <div className="px-2">
                 <div className="flex items-center gap-2 mb-1">
@@ -244,8 +294,16 @@ export default function UserDashboardPage() {
           </div>
         </aside>
 
+        {/* Backdrop for mobile sidebar */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* MAIN */}
-        <main className="flex-1 overflow-auto p-6 lg:p-12 space-y-12">
+        <main className="flex-1 overflow-auto p-4 md:p-8 lg:p-12 space-y-8 md:space-y-12">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
              <div>
@@ -305,19 +363,12 @@ export default function UserDashboardPage() {
           </div>
 
           {activeView === "COMMUNITY" ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+             <div className="grid grid-cols-1 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-2xl mx-auto">
                 <CommunityCard 
                    title="Arena Global"
                    desc="Le salon public. Discutez avec tous les participants de la plateforme en temps réel."
                    type="GLOBAL"
                    onClick={() => router.push("/hackathon/arena-live")}
-                />
-                <CommunityCard 
-                   title="Salle générale"
-                   desc="Espace commun pour tous les membres : chat, visio et partage d&apos;écran (indépendamment de la spécialité)."
-                   type="SPECIALTY"
-                   highlight={user?.mainSpecialty}
-                   onClick={() => router.push("/hackathon/room-general")}
                 />
              </div>
           ) : (
@@ -334,26 +385,38 @@ export default function UserDashboardPage() {
                 </div>
 
                 {filteredCompetitions.length === 0 ? (
-                  <div className="bg-white/[0.01] border border-white/5 border-dashed rounded-[48px] py-32 text-center flex flex-col items-center gap-6">
-                     <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/20">
+                  <div className="bg-white/[0.01] border border-white/5 border-dashed rounded-[32px] md:rounded-[48px] py-20 md:py-32 text-center flex flex-col items-center gap-6">
+                     <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/5 flex items-center justify-center text-white/20">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                      </div>
-                     <div className="space-y-2">
-                        <p className="text-white/40 font-black italic uppercase text-3xl tracking-tight">Signal Interrompu</p>
-                        <p className="text-[11px] text-white/10 uppercase tracking-[0.4em] font-bold">Aucune compétition ne correspond à votre recherche ou filtre.</p>
+                     <div className="space-y-2 px-6">
+                        <p className="text-white/40 font-black italic uppercase text-xl md:text-3xl tracking-tight">Signal Interrompu</p>
+                        <p className="text-[9px] md:text-[11px] text-white/10 uppercase tracking-[0.4em] font-bold">Aucune compétition ne correspond à votre recherche ou filtre.</p>
                      </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 pb-12">
-                    {filteredCompetitions.map(c => (
-                      <CompetitionCard 
-                        key={c.id} 
-                        competition={c} 
-                        isJoined={myJoinedIds.has(c.id)}
-                        equipe={myEquipes[c.id]}
-                        onJoinSolo={() => handleJoinSolo(c.id)}
-                      />
-                    ))}
+                    {filteredCompetitions.map(c => {
+                      const inv = invitations.find(i => i.equipe?.competitionId === c.id);
+                      return (
+                        <CompetitionCard 
+                          key={c.id} 
+                          competition={c} 
+                          isJoined={myJoinedIds.has(c.id)}
+                          equipe={myEquipes[c.id]}
+                          onJoinSolo={() => handleJoinSolo(c.id)}
+                          creating={creatingEquipeId === c.id}
+                          setCreating={(val) => setCreatingEquipeId(val ? c.id : null)}
+                          newTeamName={newTeamName}
+                          setNewTeamName={setNewTeamName}
+                          onCreateEquipe={() => handleCreateEquipe(c.id)}
+                          isCreatingLoading={creatingTeam}
+                          invitation={inv}
+                          onAcceptInvite={() => inv && handleAcceptInvite(inv)}
+                          onDeclineInvite={() => inv && handleDeclineInvite(inv.id)}
+                        />
+                      );
+                    })}
                   </div>
                 )}
              </div>
@@ -386,65 +449,109 @@ function SidebarTab({ label, icon, active, onClick }: { label: string, icon: str
   );
 }
 
-function CompetitionCard({ competition: c, isJoined, equipe, onJoinSolo }: { competition: Competition, isJoined: boolean, equipe?: Equipe, onJoinSolo: () => void }) {
+function CompetitionCard({ 
+  competition: c, 
+  isJoined, 
+  equipe, 
+  onJoinSolo,
+  creating,
+  setCreating,
+  newTeamName,
+  setNewTeamName,
+  onCreateEquipe,
+  isCreatingLoading,
+  invitation,
+  onAcceptInvite,
+  onDeclineInvite
+}: { 
+  competition: Competition, 
+  isJoined: boolean, 
+  equipe?: Equipe, 
+  onJoinSolo: () => void,
+  creating: boolean,
+  setCreating: (val: boolean) => void,
+  newTeamName: string,
+  setNewTeamName: (val: string) => void,
+  onCreateEquipe: () => void,
+  isCreatingLoading: boolean,
+  invitation?: EquipeInvitation,
+  onAcceptInvite: () => void,
+  onDeclineInvite: () => void
+}) {
   const timeLeft = useCountdown(c.endDate);
   const isExpired = timeLeft === "EXPIRED" || c.status === "COMPLETED" || c.status === "ARCHIVED";
   const isOpen = c.status === "OPEN_FOR_ENTRY";
   const isRunning = c.status === "RUNNING";
 
   return (
-    <div className="group bg-[#0a0f1a] border border-white/5 rounded-[40px] p-8 flex flex-col gap-8 transition-all duration-500 hover:border-cyan-500/30 hover:bg-[#0d1424] hover:shadow-2xl hover:shadow-cyan-500/5 relative overflow-hidden">
+    <div className="group bg-[#0a0f1a] border border-white/5 rounded-[32px] md:rounded-[40px] p-5 md:p-8 flex flex-col gap-6 md:gap-8 transition-all duration-500 hover:border-cyan-500/30 hover:bg-[#0d1424] hover:shadow-2xl hover:shadow-cyan-500/5 relative overflow-hidden">
+       {/* Background Glow */}
        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/[0.02] blur-[100px] -z-10 group-hover:bg-cyan-500/[0.05] transition-all"></div>
        
-       <div className="flex items-start justify-between gap-6">
-          <div className="w-28 h-28 rounded-[28px] overflow-hidden relative border border-white/5 shrink-0">
+       {/* Invitation Banner */}
+       {!isJoined && !isExpired && invitation && (
+         <div className="absolute top-0 left-0 right-0 bg-violet-600/90 backdrop-blur-md px-6 py-3 flex items-center justify-between z-10 border-b border-white/10 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-3">
+               <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-white">Invitation reçue de <span className="text-cyan-200">{invitation.inviter?.firstName}</span> untuk &quot;{invitation.equipe?.name}&quot;</p>
+            </div>
+            <div className="flex gap-2">
+               <button onClick={onAcceptInvite} className="px-4 py-1.5 rounded-lg bg-emerald-500 text-black text-[9px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-lg active:scale-95">Accepter</button>
+               <button onClick={onDeclineInvite} className="px-4 py-1.5 rounded-lg bg-white/10 text-white text-[9px] font-black uppercase tracking-widest hover:bg-white/20 transition-all active:scale-95">Refuser</button>
+            </div>
+         </div>
+       )}
+
+       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 md:gap-6 mt-2">
+          <div className="w-20 h-20 md:w-28 md:h-28 rounded-[20px] md:rounded-[28px] overflow-hidden relative border border-white/5 shrink-0">
              <Image src={DEFAULT_IMAGE} alt={c.title} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
           </div>
 
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-3 md:space-y-4">
              <div className="flex flex-wrap items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${STATUS_BADGE[c.status] || 'bg-white/5 text-white/40'}`}>
+                <span className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest shadow-sm ${STATUS_BADGE[c.status] || 'bg-white/5 text-white/40'}`}>
                    {STATUS_LABEL[c.status] || c.status}
                 </span>
-                <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[9px] font-black uppercase tracking-widest border border-cyan-500/20">
+                <span className="px-2 md:px-3 py-0.5 md:py-1 rounded-full bg-cyan-500/10 text-cyan-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest border border-cyan-500/20">
                    {c.specialty}
                 </span>
-                {isJoined && equipe && (
-                  <span className="px-3 py-1 rounded-full bg-violet-500/20 text-violet-400 text-[9px] font-black uppercase tracking-widest border border-violet-500/20">
-                     {equipe.name} ({equipe.members?.length || 0}/{TEAM_SIZE_MAX})
-                  </span>
-                )}
-                {isJoined && !equipe && (
-                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-widest border border-amber-500/20">
-                     File Solo
-                  </span>
-                )}
                 {isJoined && (
-                  <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-[9px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse">
-                     INSCRIT
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-pulse border border-emerald-400">
+                       INSCRIT
+                    </span>
+                    {equipe ? (
+                      <span className="px-3 py-1 rounded-full bg-violet-500/20 text-violet-400 text-[9px] font-black uppercase tracking-widest border border-violet-500/20 backdrop-blur-sm">
+                         {equipe.name} ({equipe.members?.length || 0}/{TEAM_SIZE_MAX})
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-widest border border-amber-500/20 backdrop-blur-sm">
+                         Solo
+                      </span>
+                    )}
+                  </div>
                 )}
              </div>
 
-             <h3 className="text-3xl font-black italic uppercase text-white leading-none tracking-tighter group-hover:text-cyan-400 transition-colors">
+             <h3 className="text-2xl md:text-3xl font-black italic uppercase text-white leading-none tracking-tighter group-hover:text-cyan-400 transition-colors">
                 {c.title}
              </h3>
 
              {!isExpired && (
-                <div className="flex items-center gap-2 py-1">
-                   <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
-                   <p className="text-[10px] font-mono text-cyan-400/80 uppercase font-black">
-                      {isOpen ? 'Inscriptions se terminent dans: ' : 'Fin du hackathon dans: '} 
+                <div className="flex items-center gap-1.5 md:gap-2 py-0.5 md:py-1">
+                   <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
+                   <p className="text-[8px] md:text-[10px] font-mono text-cyan-400/80 uppercase font-black">
+                      {isOpen ? 'Fin d’inscription: ' : 'Fin du hackathon: '} 
                       <span className="text-white ml-1">{timeLeft}</span>
                    </p>
                 </div>
              )}
              
              {isExpired && (
-                <div className="flex items-center gap-2 py-1 opacity-50">
-                   <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
-                   <p className="text-[10px] font-mono text-red-400 uppercase font-black tracking-widest">Compétition Terminée</p>
+                <div className="flex items-center gap-2 py-1 px-4 rounded-full bg-red-500/10 border border-red-500/20 w-fit">
+                   <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                   <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em]">Compétition Terminée</p>
                 </div>
              )}
           </div>
@@ -454,17 +561,17 @@ function CompetitionCard({ competition: c, isJoined, equipe, onJoinSolo }: { com
           {c.description}
        </p>
 
-       <div className="flex items-center justify-between pt-4 border-t border-white/5">
-          <div className="flex items-center gap-6">
+       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 border-t border-white/5">
+          <div className="flex flex-wrap items-center gap-4 md:gap-6">
              <div className="space-y-0.5">
-                <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">Reward Pool</p>
-                <p className="text-xl font-black text-white italic">{c.rewardPool.toLocaleString()} <span className="text-cyan-400 text-xs not-italic">XC</span></p>
+                <p className="text-[8px] md:text-[9px] font-black text-white/20 uppercase tracking-widest">Reward Pool</p>
+                <p className="text-lg md:text-xl font-black text-white italic">{c.rewardPool.toLocaleString()} <span className="text-cyan-400 text-[10px] md:text-xs not-italic">XC</span></p>
              </div>
              <div className="space-y-0.5">
-                <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">Inscrits</p>
+                <p className="text-[8px] md:text-[9px] font-black text-white/20 uppercase tracking-widest">Inscrits</p>
                 <div className="flex items-center gap-2">
-                   <p className="text-xl font-black text-white italic">{c._count?.participants || 0}</p>
-                   <svg className="w-4 h-4 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                   <p className="text-lg md:text-xl font-black text-white italic">{c._count?.participants || 0}</p>
+                   <svg className="w-3 h-3 md:w-4 md:h-4 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 </div>
              </div>
           </div>
@@ -474,36 +581,48 @@ function CompetitionCard({ competition: c, isJoined, equipe, onJoinSolo }: { com
                <>
                   <Link 
                     href={`/hackathon/competition/${c.id}`} 
-                    className="px-8 py-4 rounded-3xl bg-white/[0.03] border border-white/10 text-[11px] font-black uppercase tracking-widest hover:border-cyan-500/40 hover:text-cyan-400 transition-all active:scale-95"
+                    className="flex-1 px-8 py-4 rounded-3xl bg-white/[0.03] border border-white/10 text-[11px] font-black uppercase tracking-widest hover:border-cyan-500/40 hover:text-cyan-400 transition-all text-center active:scale-95"
                   >
                      Détails
                   </Link>
-                  {isRunning && (
-                    <Link 
-                      href="/hackathon/room-general"
-                      className="px-8 py-4 rounded-3xl bg-cyan-500 text-black text-[11px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-xl shadow-cyan-500/20 active:scale-95"
-                    >
-                       ENTRER
-                    </Link>
-                  )}
                </>
              ) : isExpired ? (
-               <button disabled className="px-12 py-4 rounded-3xl bg-white/5 text-white/20 text-[11px] font-black uppercase tracking-widest cursor-not-allowed">
-                  Indisponible
+               <button disabled className="px-12 py-4 rounded-3xl bg-white/5 text-white/20 text-[11px] font-black uppercase tracking-widest cursor-not-allowed border border-white/5">
+                  Terminé
                </button>
+             ) : creating ? (
+               <div className="flex flex-col gap-3 min-w-[300px] animate-in slide-in-from-right-4 duration-300">
+                  <input 
+                    type="text"
+                    autoFocus
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    placeholder="Nom de l'équipe..."
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-500/50 transition-all placeholder:text-white/20"
+                  />
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => setCreating(false)}
+                      className="px-4 py-2 text-[10px] font-black text-white/30 uppercase hover:text-white/60 transition-all"
+                    >
+                      Annuler
+                    </button>
+                    <button 
+                      onClick={onCreateEquipe}
+                      disabled={isCreatingLoading || !newTeamName.trim()}
+                      className="flex-1 px-6 py-3 rounded-2xl bg-cyan-500 text-black text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
+                    >
+                      {isCreatingLoading ? "Création..." : "Confirmer"}
+                    </button>
+                  </div>
+               </div>
              ) : (
-               <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                  <Link
-                    href={`/hackathon/competition/${c.id}`}
-                    className="px-6 py-4 rounded-3xl bg-white/[0.03] border border-white/10 text-[11px] font-black uppercase tracking-widest hover:border-cyan-500/40 hover:text-cyan-400 transition-all active:scale-95 text-center"
-                  >
-                     Détails & invitations
-                  </Link>
+               <div className="flex w-full">
                   <button 
-                    onClick={onJoinSolo}
-                    className="px-6 py-4 rounded-3xl bg-white/[0.03] border border-white/10 text-[11px] font-black uppercase tracking-widest hover:border-amber-500/40 hover:text-amber-400 transition-all active:scale-95"
+                    onClick={() => setCreating(true)}
+                    className="w-full px-8 py-4 rounded-3xl bg-cyan-500 text-black text-[11px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-xl shadow-cyan-500/20 active:scale-95"
                   >
-                     File solo (sans créer d&apos;équipe ici)
+                     CRÉER UNE ÉQUIPE
                   </button>
                </div>
              )}
