@@ -1,4 +1,4 @@
-import { getFetchBaseUrl } from "./backend-url";
+import { getBackendOrigin, getFetchBaseUrl } from "./backend-url";
 
 export type SignUpPayload = {
   email: string;
@@ -40,6 +40,12 @@ async function parseBackendJsonResponse(res: Response): Promise<Record<string, u
 }
 
 async function request(path: string, init: RequestInit) {
+  if (typeof window === "undefined" && !getBackendOrigin()) {
+    throw {
+      message:
+        "Variables API_URL / NEXT_PUBLIC_API_URL manquantes (production). Ajoutez-les sur Railway ou dans .env pour l’URL du backend Nest.",
+    };
+  }
   const token = getToken();
   const headers = new Headers(init.headers ?? {});
   if (token && !headers.has("Authorization")) {
@@ -69,6 +75,12 @@ export async function signUp(payload: SignUpPayload) {
 
 /** Inscription avec CV .docx (multipart/form-data) — conforme au backend NestJS. */
 export async function signUpWithResume(formData: FormData) {
+  if (typeof window === "undefined" && !getBackendOrigin()) {
+    throw {
+      message:
+        "Variables API_URL / NEXT_PUBLIC_API_URL manquantes (production). Ajoutez-les sur Railway ou dans .env pour l’URL du backend Nest.",
+    };
+  }
   const url = `${getFetchBaseUrl()}/auth/signup`;
   const headers: HeadersInit = {};
   const token = getToken();

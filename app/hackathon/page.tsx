@@ -10,7 +10,6 @@ import {
   getCompetitions, 
   getMyParticipation, 
   getMyEquipe,
-  createEquipe,
   joinSolo,
   getMyInvitations,
   acceptInvitation,
@@ -75,11 +74,6 @@ export default function UserDashboardPage() {
   const [myEquipes, setMyEquipes] = useState<Record<string, Equipe>>({});
   const [invitations, setInvitations] = useState<EquipeInvitation[]>([]);
   
-  // Modal state for creating equipe
-  const [showCreateModal, setShowCreateModal] = useState<string | null>(null);
-  const [newTeamName, setNewTeamName] = useState("");
-  const [creating, setCreating] = useState(false);
-  
   const [search, setSearch] = useState("");
   const [activeTech, setActiveTech] = useState<string>("all");
   const [activeStatus, setActiveStatus] = useState<string>("all");
@@ -130,22 +124,6 @@ export default function UserDashboardPage() {
       loadInvitations();
     }).catch(console.error).finally(() => setLoading(false));
   }, [router]);
-
-  const handleCreateEquipe = async (competitionId: string) => {
-    if (!newTeamName.trim()) return;
-    setCreating(true);
-    try {
-      const eq = await createEquipe(competitionId, newTeamName.trim());
-      setMyEquipes(prev => ({ ...prev, [competitionId]: eq }));
-      setMyJoinedIds(prev => new Set(prev).add(competitionId));
-      setShowCreateModal(null);
-      setNewTeamName("");
-    } catch (err: any) {
-      alert(err?.message ?? "Erreur lors de la création de l'équipe");
-    } finally {
-      setCreating(false);
-    }
-  };
 
   const handleJoinSolo = async (id: string) => {
     try {
@@ -373,7 +351,6 @@ export default function UserDashboardPage() {
                         competition={c} 
                         isJoined={myJoinedIds.has(c.id)}
                         equipe={myEquipes[c.id]}
-                        onCreateEquipe={() => setShowCreateModal(c.id)}
                         onJoinSolo={() => handleJoinSolo(c.id)}
                       />
                     ))}
@@ -384,47 +361,6 @@ export default function UserDashboardPage() {
         </main>
       </div>
 
-      {/* Create Equipe Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowCreateModal(null)}>
-          <div className="bg-[#0d1424] border border-white/10 rounded-[32px] p-8 max-w-md w-full space-y-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black italic uppercase text-white tracking-tight">Créer une Équipe</h3>
-              <p className="text-[11px] text-white/40">
-                Créez votre équipe (effectif final {TEAM_SIZE_MAX} max. après invitations), puis invitez jusqu&apos;à compléter le groupe et validez-le quand il est prêt.
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-white/30 uppercase tracking-widest">Nom de l&apos;équipe</label>
-              <input 
-                type="text" 
-                value={newTeamName} 
-                onChange={e => setNewTeamName(e.target.value)}
-                placeholder="Ex: Les Hackers, Team Alpha..."
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white outline-none focus:border-cyan-500/50 transition-all placeholder:text-white/20"
-                autoFocus
-              />
-            </div>
-            
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowCreateModal(null)}
-                className="flex-1 py-4 rounded-2xl bg-white/5 border border-white/10 text-[11px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all"
-              >
-                Annuler
-              </button>
-              <button 
-                onClick={() => handleCreateEquipe(showCreateModal)}
-                disabled={creating || !newTeamName.trim()}
-                className="flex-1 py-4 rounded-2xl bg-cyan-500 text-black text-[11px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
-              >
-                {creating ? "Création..." : "Créer"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -450,7 +386,7 @@ function SidebarTab({ label, icon, active, onClick }: { label: string, icon: str
   );
 }
 
-function CompetitionCard({ competition: c, isJoined, equipe, onCreateEquipe, onJoinSolo }: { competition: Competition, isJoined: boolean, equipe?: Equipe, onCreateEquipe: () => void, onJoinSolo: () => void }) {
+function CompetitionCard({ competition: c, isJoined, equipe, onJoinSolo }: { competition: Competition, isJoined: boolean, equipe?: Equipe, onJoinSolo: () => void }) {
   const timeLeft = useCountdown(c.endDate);
   const isExpired = timeLeft === "EXPIRED" || c.status === "COMPLETED" || c.status === "ARCHIVED";
   const isOpen = c.status === "OPEN_FOR_ENTRY";
@@ -556,18 +492,18 @@ function CompetitionCard({ competition: c, isJoined, equipe, onCreateEquipe, onJ
                   Indisponible
                </button>
              ) : (
-               <div className="flex gap-2">
-                  <button 
-                    onClick={onCreateEquipe}
-                    className="px-6 py-4 rounded-3xl bg-cyan-500 text-black text-[11px] font-black uppercase tracking-widest hover:bg-cyan-400 shadow-xl shadow-cyan-500/20 transition-all active:scale-95"
+               <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <Link
+                    href={`/hackathon/competition/${c.id}`}
+                    className="px-6 py-4 rounded-3xl bg-white/[0.03] border border-white/10 text-[11px] font-black uppercase tracking-widest hover:border-cyan-500/40 hover:text-cyan-400 transition-all active:scale-95 text-center"
                   >
-                     Créer une Équipe
-                  </button>
+                     Détails & invitations
+                  </Link>
                   <button 
                     onClick={onJoinSolo}
                     className="px-6 py-4 rounded-3xl bg-white/[0.03] border border-white/10 text-[11px] font-black uppercase tracking-widest hover:border-amber-500/40 hover:text-amber-400 transition-all active:scale-95"
                   >
-                     Pas d&apos;équipe
+                     File solo (sans créer d&apos;équipe ici)
                   </button>
                </div>
              )}

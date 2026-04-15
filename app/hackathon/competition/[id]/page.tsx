@@ -9,7 +9,6 @@ import {
   getCompetitionById,
   getMyParticipation,
   getMyEquipe,
-  createEquipe,
   joinSolo,
   inviteToEquipe,
   searchUsersForInvite,
@@ -36,11 +35,6 @@ export default function CompetitionDetailsPage() {
   const [equipeRole, setEquipeRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Create equipe
-  const [showCreate, setShowCreate] = useState(false);
-  const [teamName, setTeamName] = useState("");
-  const [creating, setCreating] = useState(false);
 
   // Invite
   const [inviteEmail, setInviteEmail] = useState("");
@@ -93,23 +87,6 @@ export default function CompetitionDetailsPage() {
 
     fetchData();
   }, [id]);
-
-  const handleCreateEquipe = async () => {
-    if (!teamName.trim()) return;
-    setCreating(true);
-    try {
-      const eq = await createEquipe(id, teamName.trim());
-      setEquipe(eq);
-      setIsJoined(true);
-      setEquipeRole("LEADER");
-      setShowCreate(false);
-      setTeamName("");
-    } catch (err: any) {
-      alert(err?.message ?? "Erreur");
-    } finally {
-      setCreating(false);
-    }
-  };
 
   const handleJoinSolo = async () => {
     try {
@@ -528,50 +505,16 @@ export default function CompetitionDetailsPage() {
               ) : (
                 <div className="space-y-4">
                   <p className="text-sm text-white/60 leading-relaxed font-light">
-                    Créez une équipe ({TEAM_SIZE_MIN}–{TEAM_SIZE_MAX} membres après invitations) ou rejoignez la file solo.
+                    La création d&apos;équipe côté leader n&apos;est pas disponible sur le web. Acceptez une invitation reçue par email, ou rejoignez la file solo pour être assigné à une équipe au démarrage.
                   </p>
-
-                  {showCreate ? (
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        value={teamName}
-                        onChange={(e) => setTeamName(e.target.value)}
-                        placeholder="Nom de l'équipe..."
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-500/50 placeholder:text-white/20"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <button onClick={() => setShowCreate(false)} className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase text-white/40">
-                          Annuler
-                        </button>
-                        <button
-                          onClick={handleCreateEquipe}
-                          disabled={creating || !teamName.trim()}
-                          className="flex-1 py-3 rounded-xl bg-cyan-500 text-black text-[10px] font-black uppercase hover:bg-cyan-400 transition-all disabled:opacity-50"
-                        >
-                          {creating ? "..." : "Créer"}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => setShowCreate(true)}
-                        disabled={!isOpen}
-                        className="block w-full bg-cyan-500 hover:bg-cyan-400 text-black p-4 rounded-2xl font-black uppercase tracking-[0.2em] text-center transition-all shadow-xl shadow-cyan-500/20 active:scale-95 disabled:opacity-50"
-                      >
-                        Créer une Équipe
-                      </button>
-                      <button
-                        onClick={handleJoinSolo}
-                        disabled={!isOpen}
-                        className="block w-full bg-white/[0.03] border border-white/10 hover:border-amber-500/30 hover:text-amber-400 p-4 rounded-2xl font-black uppercase tracking-[0.2em] text-center transition-all active:scale-95 text-white/60 disabled:opacity-50"
-                      >
-                        Pas d&apos;équipe
-                      </button>
-                    </>
-                  )}
+                  <button
+                    type="button"
+                    onClick={handleJoinSolo}
+                    disabled={!isOpen}
+                    className="block w-full bg-white/[0.03] border border-white/10 hover:border-amber-500/30 hover:text-amber-400 p-4 rounded-2xl font-black uppercase tracking-[0.2em] text-center transition-all active:scale-95 text-white/80 disabled:opacity-50"
+                  >
+                    Rejoindre la file solo
+                  </button>
                 </div>
               )}
 

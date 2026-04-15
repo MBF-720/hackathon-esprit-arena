@@ -20,6 +20,15 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ p
 
 async function proxyQueues(request: Request, { path }: { path?: string[] }) {
   const backend = getBackendOrigin();
+  if (!backend) {
+    return Response.json(
+      {
+        message:
+          "Backend non configuré : définissez API_URL et NEXT_PUBLIC_API_URL (URL du Nest) dans l’environnement, puis redéployez ou redémarrez Next.",
+      },
+      { status: 503, headers: { "Content-Type": "application/json" } }
+    );
+  }
   const pathStr = path?.length ? path.join("/") : "";
   const url = `${backend}/queues${pathStr ? `/${pathStr}` : ""}${new URL(request.url).search}`;
 
