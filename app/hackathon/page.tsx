@@ -224,7 +224,7 @@ export default function UserDashboardPage() {
         {/* SIDEBAR - Responsive drawer on mobile */}
         <aside className={`
           fixed inset-y-0 left-0 z-40 w-72 bg-[#090e18] border-r border-white/5 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-0 lg:flex lg:w-80
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${sidebarOpen ? 'translate-x-0 shadow-[0_0_50px_rgba(0,0,0,0.5)]' : '-translate-x-full lg:translate-x-0'}
           flex flex-col p-8 gap-10
         `}>
           {/* Close button for mobile */}
@@ -248,9 +248,9 @@ export default function UserDashboardPage() {
              </div>
 
              <nav className="space-y-1.5">
-                <SidebarTab label="Catalogue" icon="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" active={activeView === "CATALOGUE"} onClick={() => setActiveView("CATALOGUE")} />
-                <SidebarTab label="Mes Inscriptions" icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" active={activeView === "MY_EVENTS"} onClick={() => setActiveView("MY_EVENTS")} />
-                <SidebarTab label="Communauté" icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" active={activeView === "COMMUNITY"} onClick={() => setActiveView("COMMUNITY")} />
+                <SidebarTab label="Catalogue" icon="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" active={activeView === "CATALOGUE"} onClick={() => { setActiveView("CATALOGUE"); setSidebarOpen(false); }} />
+                <SidebarTab label="Mes Inscriptions" icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" active={activeView === "MY_EVENTS"} onClick={() => { setActiveView("MY_EVENTS"); setSidebarOpen(false); }} />
+                <SidebarTab label="Communauté" icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" active={activeView === "COMMUNITY"} onClick={() => { setActiveView("COMMUNITY"); setSidebarOpen(false); }} />
              </nav>
           </div>
 
@@ -319,18 +319,18 @@ export default function UserDashboardPage() {
 
              {activeView !== "COMMUNITY" && (
                 <div className="space-y-4">
-                   <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 self-end">
-                      {["ALL", "FRONTEND", "BACKEND", "DATA", "DESIGN"].map(f => (
+                   <div className="flex flex-wrap items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 md:self-end">
+                      {["ALL", "FRONTEND", "BACKEND"].map(f => (
                         <button 
                           key={f} 
                           onClick={() => setActiveTech(f.toLowerCase())}
-                          className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all ${activeTech === f.toLowerCase() ? 'bg-cyan-500 text-black shadow-xl shadow-cyan-500/20' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
+                          className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase transition-all ${activeTech === f.toLowerCase() ? 'bg-cyan-500 text-black shadow-xl shadow-cyan-500/20' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
                         >
                           {f}
                         </button>
                       ))}
                    </div>
-                   <div className="flex items-center gap-2 justify-end">
+                   <div className="flex flex-wrap items-center gap-2 justify-start md:justify-end">
                       <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mr-2">Status:</p>
                       {[
                         { id: "all", label: "TOUT" },
@@ -342,7 +342,7 @@ export default function UserDashboardPage() {
                           <button 
                             key={s.id} 
                             onClick={() => setActiveStatus(s.id)}
-                            className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all border flex items-center gap-2 ${
+                            className={`px-3 sm:px-4 py-1.5 rounded-full text-[8.5px] sm:text-[9px] font-black uppercase transition-all border flex items-center gap-2 ${
                               isLiveAndActive 
                               ? 'bg-red-500 text-white border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]' 
                               : activeStatus === s.id 
@@ -502,8 +502,8 @@ function CompetitionCard({
          </div>
        )}
 
-       <div className="flex flex-col sm:flex-row items-start justify-between gap-4 md:gap-6 mt-2">
-          <div className="w-20 h-20 md:w-28 md:h-28 rounded-[20px] md:rounded-[28px] overflow-hidden relative border border-white/5 shrink-0">
+       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6 mt-2">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 rounded-[16px] sm:rounded-[20px] md:rounded-[28px] overflow-hidden relative border border-white/5 shrink-0">
              <Image src={DEFAULT_IMAGE} alt={c.title} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
           </div>
@@ -534,7 +534,7 @@ function CompetitionCard({
                 )}
              </div>
 
-             <h3 className="text-2xl md:text-3xl font-black italic uppercase text-white leading-none tracking-tighter group-hover:text-cyan-400 transition-colors">
+             <h3 className="text-xl sm:text-2xl md:text-3xl font-black italic uppercase text-white leading-tight tracking-tighter group-hover:text-cyan-400 transition-colors">
                 {c.title}
              </h3>
 
@@ -562,43 +562,43 @@ function CompetitionCard({
        </p>
 
        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 border-t border-white/5">
-          <div className="flex flex-wrap items-center gap-4 md:gap-6">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 md:gap-8">
              <div className="space-y-0.5">
                 <p className="text-[8px] md:text-[9px] font-black text-white/20 uppercase tracking-widest">Reward Pool</p>
-                <p className="text-lg md:text-xl font-black text-white italic">{c.rewardPool.toLocaleString()} <span className="text-cyan-400 text-[10px] md:text-xs not-italic">XC</span></p>
+                <p className="text-base sm:text-lg md:text-xl font-black text-white italic">{c.rewardPool.toLocaleString()} <span className="text-cyan-400 text-[10px] md:text-xs not-italic">XC</span></p>
              </div>
              <div className="space-y-0.5">
                 <p className="text-[8px] md:text-[9px] font-black text-white/20 uppercase tracking-widest">Inscrits</p>
                 <div className="flex items-center gap-2">
-                   <p className="text-lg md:text-xl font-black text-white italic">{c._count?.participants || 0}</p>
+                   <p className="text-base sm:text-lg md:text-xl font-black text-white italic">{c._count?.participants || 0}</p>
                    <svg className="w-3 h-3 md:w-4 md:h-4 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 </div>
              </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
              {isJoined ? (
                <>
                   <Link 
                     href={`/hackathon/competition/${c.id}`} 
-                    className="flex-1 px-8 py-4 rounded-3xl bg-white/[0.03] border border-white/10 text-[11px] font-black uppercase tracking-widest hover:border-cyan-500/40 hover:text-cyan-400 transition-all text-center active:scale-95"
+                    className="w-full sm:w-40 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl bg-white/[0.03] border border-white/10 text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:border-cyan-500/40 hover:text-cyan-400 transition-all text-center active:scale-95"
                   >
                      Détails
                   </Link>
                </>
              ) : isExpired ? (
-               <button disabled className="px-12 py-4 rounded-3xl bg-white/5 text-white/20 text-[11px] font-black uppercase tracking-widest cursor-not-allowed border border-white/5">
+               <button disabled className="w-full sm:w-40 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl bg-white/5 text-white/20 text-[10px] sm:text-[11px] font-black uppercase tracking-widest cursor-not-allowed border border-white/5">
                   Terminé
                </button>
              ) : creating ? (
-               <div className="flex flex-col gap-3 min-w-[300px] animate-in slide-in-from-right-4 duration-300">
+               <div className="flex flex-col gap-3 w-full sm:min-w-[300px] animate-in slide-in-from-right-4 duration-300">
                   <input 
                     type="text"
                     autoFocus
                     value={newTeamName}
                     onChange={(e) => setNewTeamName(e.target.value)}
                     placeholder="Nom de l'équipe..."
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-500/50 transition-all placeholder:text-white/20"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl sm:rounded-2xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-500/50 transition-all placeholder:text-white/20"
                   />
                   <div className="flex gap-2">
                     <button 
@@ -610,17 +610,17 @@ function CompetitionCard({
                     <button 
                       onClick={onCreateEquipe}
                       disabled={isCreatingLoading || !newTeamName.trim()}
-                      className="flex-1 px-6 py-3 rounded-2xl bg-cyan-500 text-black text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
+                      className="flex-1 px-6 py-3 rounded-xl sm:rounded-2xl bg-cyan-500 text-black text-[10px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
                     >
                       {isCreatingLoading ? "Création..." : "Confirmer"}
                     </button>
                   </div>
                </div>
              ) : (
-               <div className="flex w-full">
+               <div className="flex w-full sm:w-auto">
                   <button 
                     onClick={() => setCreating(true)}
-                    className="w-full px-8 py-4 rounded-3xl bg-cyan-500 text-black text-[11px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-xl shadow-cyan-500/20 active:scale-95"
+                    className="w-full sm:px-8 py-3.5 sm:py-4 rounded-2xl sm:rounded-3xl bg-cyan-500 text-black text-[10px] sm:text-[11px] font-black uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-xl shadow-cyan-500/20 active:scale-95"
                   >
                      CRÉER UNE ÉQUIPE
                   </button>

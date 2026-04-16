@@ -818,6 +818,27 @@ export async function searchUsersForInvite(
   return res as unknown as SearchUserResult[];
 }
 
+/** Supprimer un membre d'une équipe (Leader uniquement). */
+export async function removeEquipeMember(
+  equipeId: string,
+  userId: string,
+): Promise<{ message: string }> {
+  const res = await request(`/equipes/${equipeId}/members/${userId}`, {
+    method: 'DELETE',
+  });
+  return res as { message: string };
+}
+
+/** Supprimer une équipe entière (Admin uniquement). */
+export async function deleteEquipe(
+  equipeId: string,
+): Promise<{ message: string }> {
+  const res = await request(`/admin/equipes/${equipeId}`, {
+    method: 'DELETE',
+  });
+  return res as { message: string };
+}
+
 // ─────────────────────────────────────────────────────────────────
 // TEAM CHAT
 // ─────────────────────────────────────────────────────────────────

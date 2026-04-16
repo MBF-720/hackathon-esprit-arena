@@ -56,17 +56,6 @@ export default function PlatformNavbar() {
             <p className="text-[10px] text-cyan-400 uppercase tracking-wider leading-tight font-medium">{t.competitiveHub}</p>
           </div>
         </Link>
-        <div className="flex items-center gap-2 lg:hidden">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-white/70 hover:text-white"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-            </svg>
-          </button>
-        </div>
 
         {/* Liens centraux - cachés sur mobile */}
         <nav className="hidden lg:flex items-center gap-8">
@@ -106,26 +95,38 @@ export default function PlatformNavbar() {
           )}
         </nav>
 
-        {/* Barre de recherche */}
+        {/* Barre de recherche - cachée sur mobile */}
         <div className="hidden lg:flex items-center flex-1 max-w-xs mx-4 rounded-lg bg-white/10 border border-white/10 overflow-hidden">
           <span className="pl-3 text-white/50">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
           </span>
           <input type="search" placeholder={t.nav.searchChallenge} className="w-full py-2.5 pl-2 pr-4 text-sm bg-transparent text-white placeholder:text-white/50 outline-none" />
         </div>
+        {/* Right side Actions */}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
+          {/* Mobile Menu Toggle - moved here for better grouping */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 text-white/70 hover:text-white"
+            aria-label="Menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+            </svg>
+          </button>
 
-        {/* Droite : langue, notifications, profil ou connexion */}
-        <div className="flex items-center gap-2 shrink-0">
+          {/* Lang switcher */}
           <div className="relative" ref={langRef}>
             <button
               type="button"
               onClick={() => setLangOpen((o) => !o)}
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1 px-2 py-2 rounded-lg text-white/80 hover:bg-white/10 transition-colors"
               aria-label={t.a11y.lang}
               aria-expanded={langOpen}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-              <span className="text-sm font-medium">{langLabel[lang]}</span>
+              <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+              <span className="text-xs font-bold hidden sm:inline">{langLabel[lang]}</span>
             </button>
             {langOpen && (
               <ul className="absolute right-0 top-full mt-1 py-1 min-w-[120px] bg-[#1a1f26] border border-white/10 rounded-lg shadow-xl z-50">
@@ -139,27 +140,29 @@ export default function PlatformNavbar() {
               </ul>
             )}
           </div>
-          <button type="button" className="p-2.5 rounded-lg text-white/80 hover:bg-white/10 transition-colors" aria-label="Notifications">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+
+          <button type="button" className="p-2 rounded-lg text-white/80 hover:bg-white/10 transition-colors" aria-label="Notifications">
+            <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
           </button>
+
           {userLoaded && (user ? (
             <div className="relative" ref={profileRef}>
               <button
                 type="button"
                 onClick={() => setProfileOpen((o) => !o)}
-                className="flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                className="flex items-center gap-2 pl-1 pr-1 sm:pl-2 sm:pr-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors ml-1"
                 aria-expanded={profileOpen}
                 aria-label="Profil"
               >
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-white leading-tight">{user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "Utilisateur"}</p>
-                  <p className="text-[10px] text-white/50 leading-tight">Diamond II</p>
+                <div className="text-right hidden md:block">
+                  <p className="text-xs font-bold text-white leading-tight">{user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : "Utilisateur"}</p>
+                  <p className="text-[9px] text-white/40 leading-tight font-medium">Diamond II</p>
                 </div>
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-sm font-bold text-black">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-sm font-bold text-black border-2 border-white/10">
                     {user?.firstName?.[0] || "?"}{user?.lastName?.[0] || ""}
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0f1419]" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500 border-2 border-[#0f1419]" />
                 </div>
               </button>
               {profileOpen && (
@@ -177,7 +180,7 @@ export default function PlatformNavbar() {
               )}
             </div>
           ) : (
-            <Link href="/signup" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-2 rounded-lg text-sm transition-colors">
+            <Link href="/signup" className="bg-cyan-500 hover:bg-cyan-400 text-black font-semibold px-4 py-2 rounded-lg text-sm transition-colors ml-2">
               {t.nav.signUp}
             </Link>
           ))}

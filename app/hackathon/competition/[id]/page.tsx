@@ -16,6 +16,7 @@ import {
   joinTeamChat,
   getToken,
   markEquipeReady,
+  removeEquipeMember,
   TEAM_SIZE_MIN,
   TEAM_SIZE_MAX,
   type Competition,
@@ -195,6 +196,20 @@ export default function CompetitionDetailsPage() {
     }
   };
 
+  const handleRemoveMember = async (memberUserId: string) => {
+    if (!equipe) return;
+    if (!confirm("Voulez-vous vraiment retirer ce membre de l'équipe ?")) return;
+
+    setEquipePanelMsg(null);
+    try {
+      await removeEquipeMember(equipe.id, memberUserId);
+      setEquipePanelMsg({ type: "success", text: "Membre retiré avec succès." });
+      await refreshEquipe();
+    } catch (err: any) {
+      setEquipePanelMsg({ type: "error", text: err?.message ?? "Erreur lors de la suppression." });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0f1a] flex flex-col">
@@ -371,10 +386,23 @@ export default function CompetitionDetailsPage() {
                       <p className="text-sm font-bold text-white truncate">{m.user.firstName} {m.user.lastName}</p>
                       <p className="text-[10px] text-white/30">{m.user.email}</p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${m.role === "LEADER" ? "bg-amber-500/20 text-amber-400" : "bg-white/5 text-white/30"
-                      }`}>
-                      {m.role}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${m.role === "LEADER" ? "bg-amber-500/20 text-amber-400" : "bg-white/5 text-white/30"
+                        }`}>
+                        {m.role}
+                      </span>
+                      {isLeader && m.role !== "LEADER" && (
+                        <button
+                          onClick={() => handleRemoveMember(m.userId)}
+                          className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all border border-red-500/10"
+                          title="Retirer de l'équipe"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -42,6 +42,7 @@ type View = "OVERVIEW" | "USERS" | "COMPANIES" | "HACKATHONS" | "WORKFLOWS";
 export default function DashboardPage() {
   const router = useRouter();
   const [activeView, setActiveView] = useState<View>("OVERVIEW");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Dashboard Data
   const [stats, setStats] = useState<Stats | null>(null);
@@ -235,31 +236,42 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#0a0f1a] text-white flex flex-col selection:bg-cyan-500/30">
       <PlatformNavbar />
       
-      <div className="flex flex-1 overflow-hidden">
-        {/* SIDEBAR */}
-        <aside className="w-64 border-r border-white/5 bg-[#0d1117] hidden md:flex flex-col p-6 gap-8">
+      <div className="flex flex-1 overflow-hidden relative">
+        <aside className={`
+          fixed inset-y-0 left-0 z-40 w-64 bg-[#0d1117] border-r border-white/5 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 lg:z-0 lg:flex lg:flex-col
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          flex flex-col p-6 gap-8
+        `}>
+          {/* Close button for mobile */}
+          <button 
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+
           <div className="space-y-6">
             <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] px-2">Navigation</p>
             <nav className="space-y-1">
               <SidebarItem 
                 icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>}
-                label="Vue d'ensemble" active={activeView === "OVERVIEW"} onClick={() => setActiveView("OVERVIEW")} 
+                label="Vue d'ensemble" active={activeView === "OVERVIEW"} onClick={() => { setActiveView("OVERVIEW"); setSidebarOpen(false); }} 
               />
               <SidebarItem 
                 icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>}
-                label="Utilisateurs" active={activeView === "USERS"} onClick={() => setActiveView("USERS")} 
+                label="Utilisateurs" active={activeView === "USERS"} onClick={() => { setActiveView("USERS"); setSidebarOpen(false); }} 
               />
               <SidebarItem 
                 icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>}
-                label="Entreprises" active={activeView === "COMPANIES"} onClick={() => setActiveView("COMPANIES")} 
+                label="Entreprises" active={activeView === "COMPANIES"} onClick={() => { setActiveView("COMPANIES"); setSidebarOpen(false); }} 
               />
               <SidebarItem 
                 icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>}
-                label="Hackathons" active={activeView === "HACKATHONS"} onClick={() => setActiveView("HACKATHONS")} 
+                label="Hackathons" active={activeView === "HACKATHONS"} onClick={() => { setActiveView("HACKATHONS"); setSidebarOpen(false); }} 
               />
               <SidebarItem 
                 icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
-                label="Workflows n8n" active={activeView === "WORKFLOWS"} onClick={() => setActiveView("WORKFLOWS")} 
+                label="Workflows n8n" active={activeView === "WORKFLOWS"} onClick={() => { setActiveView("WORKFLOWS"); setSidebarOpen(false); }} 
               />
             </nav>
           </div>
@@ -270,8 +282,28 @@ export default function DashboardPage() {
           </div>
         </aside>
 
+        {/* Backdrop for mobile sidebar */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
         {/* MAIN CONTENT AREA */}
-        <main className="flex-1 overflow-auto p-6 md:p-10">
+        <main className="flex-1 overflow-auto p-6 md:p-10 relative">
+          
+          {/* Mobile Sidebar Toggle */}
+          <div className="md:hidden mb-6 flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10">
+            <button 
+              onClick={() => setSidebarOpen(true)}
+              className="flex items-center gap-2 text-[10px] font-black uppercase text-cyan-400 tracking-widest"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
+              Menu Dashboard
+            </button>
+            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+          </div>
           
           {/* Header */}
           <div className="mb-10">

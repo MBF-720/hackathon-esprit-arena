@@ -8,10 +8,13 @@ import {
   getProfile,
   getCompetitionById,
   getCompetitionParticipantsForAdmin,
+  getCompetitionEquipes,
+  deleteEquipe,
   selectWinner,
   type Competition,
   type CompetitionParticipantAdmin,
   type UserProfile,
+  type Equipe,
 } from "../../../lib/api";
 
 export default function HackathonDetailsPage() {
@@ -25,6 +28,7 @@ export default function HackathonDetailsPage() {
   
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [participants, setParticipants] = useState<CompetitionParticipantAdmin[]>([]);
+  const [equipes, setEquipes] = useState<Equipe[]>([]);
 
   useEffect(() => {
     if (!getToken()) {
@@ -41,13 +45,15 @@ export default function HackathonDetailsPage() {
         return Promise.all([
           getCompetitionById(id),
           getCompetitionParticipantsForAdmin(id),
+          getCompetitionEquipes(id),
         ]);
       })
       .then((result) => {
         if (!result) return;
-        const [comp, partsData] = result;
+        const [comp, partsData, equipesData] = result;
         setCompetition(comp);
         setParticipants(partsData.participants ?? []);
+        setEquipes(equipesData.equipes ?? []);
       })
       .catch((err) => setError(err?.message ?? "Erreur de chargement des détails"))
       .finally(() => {
@@ -73,6 +79,24 @@ export default function HackathonDetailsPage() {
           ? (err as { message: string }).message
           : "Erreur lors de la sélection du gagnant";
       setError(msg);
+    }
+  };
+
+  const handleDeleteTeam = async (equipeId: string) => {
+    if (!confirm("Voulez-vous vraiment supprimer cette équipe ? Cette action est irréversible.")) return;
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await deleteEquipe(equipeId);
+      setSuccess("Équipe supprimée avec succès !");
+      // Refresh teams and participants
+      const equipesData = await getCompetitionEquipes(id);
+      setEquipes(equipesData.equipes ?? []);
+      const partsData = await getCompetitionParticipantsForAdmin(id);
+      setParticipants(partsData.participants ?? []);
+    } catch (err: any) {
+      setError(err?.message ?? "Erreur lors de la suppression de l'équipe");
     }
   };
 
@@ -281,6 +305,108 @@ export default function HackathonDetailsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* TEAMS SECTION */}
+        <div className="mt-16 mb-8 flex items-center justify-between">
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white flex items-center gap-4">
+            <span className="w-2 h-8 bg-cyan-500 rounded-full"></span>
+            Equipes & Membres
+          </h2>
+          <span className="px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold tracking-widest uppercase">
+            {equipes.length} Équipe{equipes.length !== 1 && "s"}
+          </span>
+        </div>
+
+        {equipes.length === 0 ? (
+          <div className="py-24 text-center rounded-3xl border border-dashed border-white/10 bg-white/[0.02] backdrop-blur-sm">
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 border border-white/10">
+              <span className="text-2xl text-white/20">👥</span>
+            </div>
+            <p className="text-white/40 text-lg font-light italic">Aucune équipe inscrite pour le moment.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 pb-20">
+            {equipes.map((eq) => (
+              <div key={eq.id} className="group relative rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] to-transparent hover:from-white/[0.08] transition-all duration-500 overflow-hidden shadow-2xl">
+                {/* Status Glow Overlay */}
+                <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] opacity-20 -mr-16 -mt-16 transition-all duration-500 group-hover:opacity-30 ${
+                  eq.status === 'READY' ? 'bg-emerald-500' : 
+                  eq.status === 'PARTICIPATING' ? 'bg-cyan-500' : 
+                  'bg-amber-500'
+                }`} />
+
+                <div className="p-8 relative z-10">
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-cyan-400 transition-colors">
+                          {eq.name}
+                        </h3>
+                        <span className={`px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-[0.15em] border ${
+                          eq.status === 'READY' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 
+                          eq.status === 'PARTICIPATING' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 
+                          'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]'
+                        }`}>
+                          {eq.status}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-white/20 font-mono tracking-widest">UID: {eq.id.toUpperCase()}</p>
+                    </div>
+
+                    <button 
+                      onClick={() => handleDeleteTeam(eq.id)}
+                      className="group/btn p-3 rounded-2xl bg-white/5 text-white/20 border border-white/5 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all active:scale-90 md:opacity-0 group-hover:opacity-100"
+                      title="Supprimer l'équipe"
+                    >
+                      <svg className="w-5 h-5 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                       <p className="text-[11px] font-black text-white/30 uppercase tracking-[0.2em]">Effectif de Combat</p>
+                       <span className="text-[10px] font-mono text-white/50">{eq.members?.length || 0} / 6</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {eq.members?.map((m) => (
+                        <div key={m.id} className="flex items-center gap-4 p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.05] hover:border-white/10 transition-all">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-black shadow-inner ${
+                            m.role === 'LEADER' 
+                            ? 'bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/20' 
+                            : 'bg-white/5 text-white/40 border border-white/10'
+                          }`}>
+                            {m.user?.firstName?.[0]}{m.user?.lastName?.[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-white tracking-tight truncate">
+                              {m.user?.firstName} {m.user?.lastName}
+                            </p>
+                            <p className="text-[10px] text-white/30 truncate font-light tracking-wide">{m.user?.email}</p>
+                          </div>
+                          {m.role === 'LEADER' && (
+                            <span className="text-[8px] font-black text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20 shadow-sm">
+                              Leader
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Accent */}
+                <div className={`absolute bottom-0 left-0 w-full h-1 opacity-20 ${
+                  eq.status === 'READY' ? 'bg-emerald-500' : 
+                  eq.status === 'PARTICIPATING' ? 'bg-cyan-500' : 
+                  'bg-amber-500'
+                }`} />
+              </div>
+            ))}
           </div>
         )}
       </main>
