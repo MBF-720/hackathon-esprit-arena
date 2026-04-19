@@ -3,8 +3,13 @@
 import { useEffect, useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import PlatformNavbar from "../components/PlatformNavbar";
+import FeedbackModal from "../components/FeedbackModal";
+import { MessageSquareHeart, Quote, Star, Sparkles, MessageSquare, AlertTriangle, Lightbulb } from "lucide-react";
+import { db } from "../lib/firebase";
+import { collection, query, where, orderBy, getDocs, limit } from "firebase/firestore";
 import { 
   getHackathonRooms, 
   getCompetitions, 
@@ -69,6 +74,7 @@ export default function UserDashboardPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   
   const [rooms, setRooms] = useState<Room[]>([]);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
@@ -79,6 +85,9 @@ export default function UserDashboardPage() {
   const [search, setSearch] = useState("");
   const [activeTech, setActiveTech] = useState<string>("all");
   const [activeStatus, setActiveStatus] = useState<string>("all");
+
+  const [publicFeedbacks, setPublicFeedbacks] = useState<any[]>([]);
+  const [isSystemOpen, setIsSystemOpen] = useState(false);
 
   // Registration flow state
   const [creatingEquipeId, setCreatingEquipeId] = useState<string | null>(null);
@@ -130,6 +139,23 @@ export default function UserDashboardPage() {
       
       loadInvitations();
     }).catch(console.error).finally(() => setLoading(false));
+
+    // Load Public Feedbacks
+    const q = query(
+      collection(db, "feedbacks"), 
+      where("isVisible", "==", true), 
+      orderBy("createdAt", "desc"),
+      limit(6)
+    );
+    getDocs(q).then(snap => {
+      setPublicFeedbacks(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    // Load System Config (Feedback Open/Closed)
+    getDocs(collection(db, "system_config")).then(snap => {
+      const config = snap.docs.find(d => d.id === "feedback_settings");
+      if (config) setIsSystemOpen(config.data().isOpen);
+    });
   }, [router]);
 
   const handleJoinSolo = async (id: string) => {
@@ -315,6 +341,45 @@ export default function UserDashboardPage() {
                     activeView === "MY_EVENTS" ? "Vos Hackathons" : 
                     "Salles de Discussion Communautaires"}
                 </p>
+
+                {/* Feedback Button under the title - BIG & ANIMATED */}
+                <motion.button 
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ 
+                    x: 0, 
+                    opacity: 1,
+                    y: isSystemOpen ? [0, -5, 0] : 0 
+                  }}
+                  transition={{
+                    y: {
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    },
+                    duration: 0.8
+                  }}
+                  onClick={() => {
+                    if (isSystemOpen) setFeedbackOpen(true);
+                    else alert("Le système de feedback est actuellement fermé. Il ouvrira bientôt !");
+                  }}
+                  className={`mt-6 flex items-center gap-4 px-8 py-4 rounded-2xl border-2 transition-all group relative overflow-hidden shadow-2xl ${
+                    isSystemOpen 
+                      ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border-cyan-500/40 text-cyan-400 hover:scale-105 hover:border-cyan-400 shadow-cyan-500/10' 
+                      : 'bg-white/5 border-white/10 text-white/20 cursor-not-allowed grayscale'
+                  }`}
+                >
+                  {/* Subtle Background pulse */}
+                  {isSystemOpen && <div className="absolute inset-0 bg-cyan-400/5 animate-pulse group-hover:bg-cyan-400/10 transition-colors" />}
+                  
+                  <MessageSquareHeart className="w-6 h-6" />
+                  <span className="text-sm font-black uppercase tracking-[0.3em]">
+                    {isSystemOpen ? "Feedback" : "Feedback (Bientôt)"}
+                  </span>
+                  
+                  {isSystemOpen && (
+                    <div className="ml-2 w-2 h-2 rounded-full bg-cyan-400 animate-ping"></div>
+                  )}
+                </motion.button>
              </div>
 
              {activeView !== "COMMUNITY" && (
@@ -424,6 +489,65 @@ export default function UserDashboardPage() {
         </main>
       </div>
 
+      {/* Wall of Feedback Section (The Shared Feedbacks) */}
+      {publicFeedbacks.length > 0 && (
+        <section className="bg-[#04060b] border-t border-white/5 py-20 overflow-hidden">
+          <div className="max-w-[1920px] mx-auto px-8 md:px-12">
+            <div className="flex flex-col items-center mb-16 text-center space-y-4">
+               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[9px] font-black uppercase tracking-widest">
+                  <Quote className="w-3 h-3" /> Paroles d&apos;initiés
+               </div>
+               <h2 className="text-4xl font-black italic uppercase text-white tracking-widest">Le Mur des <span className="text-cyan-400">Retours</span></h2>
+               <p className="text-white/30 text-xs font-medium uppercase tracking-[0.2em]">Ce que vos pairs pensent de l&apos;expérience Arena</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+               {publicFeedbacks.map((fb, idx) => (
+                 <motion.div 
+                   key={fb.id}
+                   initial={{ opacity: 0, y: 30 }}
+                   whileInView={{ opacity: 1, y: 0 }}
+                   transition={{ delay: idx * 0.1 }}
+                   viewport={{ once: true }}
+                   className="group p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-cyan-500/30 transition-all relative overflow-hidden h-full flex flex-col"
+                 >
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/[0.02] blur-3xl -z-10 group-hover:bg-cyan-500/10 transition-all"></div>
+                   
+                   <Quote className="w-10 h-10 text-cyan-500/10 absolute top-6 right-6" />
+
+                   <div className="flex items-center gap-3 mb-6 relative">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-black font-black text-xs">
+                        {fb.userName?.[0] || 'A'}
+                      </div>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-widest text-white/80">{fb.userName || 'Anonyme'}</p>
+                        <div className="flex gap-0.5 mt-0.5">
+                           {[1,2,3,4,5].map(s => <Star key={s} className={`w-2.5 h-2.5 ${fb.rating === 'EXCELLENT' ? 'text-cyan-400 fill-cyan-400' : 'text-white/10'}`} />)}
+                        </div>
+                      </div>
+                   </div>
+
+                   <p className="text-white/60 text-sm leading-relaxed italic mb-8 flex-1 group-hover:text-white transition-colors">
+                     &quot;{fb.message || 'Expérience incroyable dans l’arène !'}&quot;
+                   </p>
+
+                   {fb.problemType && (
+                      <div className="pt-6 border-t border-white/5 mt-auto flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <Sparkles className="w-3 h-3 text-cyan-400" />
+                           <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400/60">{fb.problemType}</span>
+                         </div>
+                         <div className="text-[9px] font-mono text-white/20">VERIFIED FEEDBACK</div>
+                      </div>
+                   )}
+                 </motion.div>
+               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <FeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

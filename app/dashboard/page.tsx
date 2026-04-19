@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { db } from "../lib/firebase";
+import { collection, query, orderBy, getDocs, Timestamp, updateDoc, doc, setDoc } from "firebase/firestore";
+import { Smile, Frown, Meh, Heart, MessageSquare, Lightbulb, AlertTriangle, Clock, User, Eye, EyeOff } from "lucide-react";
 import PlatformNavbar from "../components/PlatformNavbar";
 import {
   getToken,
@@ -37,7 +40,7 @@ type Stats = {
   rooms: { total: number; description: string };
 };
 
-type View = "OVERVIEW" | "USERS" | "COMPANIES" | "HACKATHONS" | "WORKFLOWS";
+type View = "OVERVIEW" | "USERS" | "COMPANIES" | "HACKATHONS" | "WORKFLOWS" | "FEEDBACKS";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -99,6 +102,12 @@ export default function DashboardPage() {
   const [n8nLoading, setN8nLoading] = useState(false);
   const [n8nMsg, setN8nMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
+  // Feedbacks
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
+  const [isSystemOpen, setIsSystemOpen] = useState(false);
+  const [loadingSystem, setLoadingSystem] = useState(true);
+
   useEffect(() => {
     const token = getToken();
     if (!token) {
@@ -151,6 +160,19 @@ export default function DashboardPage() {
       getCompetitions({ limit: 50 })
         .then((res) => setCompetitions(res.data ?? []))
         .finally(() => setCompLoading(false));
+    } else if (activeView === "FEEDBACKS") {
+      setLoadingFeedbacks(true);
+      const q = query(collection(db, "feedbacks"), orderBy("createdAt", "desc"));
+      getDocs(q).then(snapshot => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setFeedbacks(data);
+      }).finally(() => setLoadingFeedbacks(false));
+
+      // Fetch System Config
+      getDocs(collection(db, "system_config")).then(snap => {
+        const config = snap.docs.find(d => d.id === "feedback_settings");
+        if (config) setIsSystemOpen(config.data().isOpen);
+      }).finally(() => setLoadingSystem(false));
     }
   }, [activeView, usersPage, usersQuery, usersRole]);
 
@@ -217,6 +239,26 @@ export default function DashboardPage() {
     }
   };
 
+  const handleToggleVisibility = async (fbId: string, currentStatus: boolean) => {
+    try {
+      const fbRef = doc(db, "feedbacks", fbId);
+      await updateDoc(fbRef, { isVisible: !currentStatus });
+      setFeedbacks(prev => prev.map(f => f.id === fbId ? { ...f, isVisible: !currentStatus } : f));
+    } catch (err: any) {
+      alert("Error updating visibility: " + err.message);
+    }
+  };
+
+  const handleToggleSystem = async () => {
+    try {
+      const configRef = doc(db, "system_config", "feedback_settings");
+      await setDoc(configRef, { isOpen: !isSystemOpen }, { merge: true });
+      setIsSystemOpen(!isSystemOpen);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0f1a] flex flex-col">
@@ -272,6 +314,10 @@ export default function DashboardPage() {
               <SidebarItem 
                 icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
                 label="Workflows n8n" active={activeView === "WORKFLOWS"} onClick={() => { setActiveView("WORKFLOWS"); setSidebarOpen(false); }} 
+              />
+              <SidebarItem 
+                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>}
+                label="Feedbacks" active={activeView === "FEEDBACKS"} onClick={() => { setActiveView("FEEDBACKS"); setSidebarOpen(false); }} 
               />
             </nav>
           </div>
@@ -738,6 +784,133 @@ export default function DashboardPage() {
                     )}
                   </div>
                </div>
+            </div>
+          )}
+          {activeView === "FEEDBACKS" && (
+            <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
+              {/* Master System Toggle */}
+              <div className="bg-[#11161d] border border-cyan-500/20 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(6,182,212,0.05)]">
+                 <div className="flex items-center gap-5">
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${isSystemOpen ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-500'}`}>
+                       <span className={`w-3 h-3 rounded-full ${isSystemOpen ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></span>
+                    </div>
+                    <div>
+                       <h3 className="text-xl font-black italic uppercase text-white tracking-widest">Contrôle du Système</h3>
+                       <p className="text-xs text-white/40 font-mono tracking-tighter">Status actuel: <span className={isSystemOpen ? 'text-emerald-400' : 'text-red-400'}>{isSystemOpen ? 'OUVERT AUX UTILISATEURS' : 'FERMÉ / LOCK'}</span></p>
+                    </div>
+                 </div>
+                 <button 
+                   onClick={handleToggleSystem}
+                   className={`px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-2xl ${
+                     isSystemOpen 
+                       ? 'bg-red-500 text-white shadow-red-500/20' 
+                       : 'bg-emerald-500 text-black shadow-emerald-500/20'
+                   }`}
+                 >
+                   {isSystemOpen ? "FERMER LE SYSTÈME" : "OUVRIR LE SYSTÈME"}
+                 </button>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <SectionTitle title="Retours Utilisateurs (Firestore)" />
+                <span className="px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase tracking-widest">
+                  {feedbacks.length} Feedbacks reçus
+                </span>
+              </div>
+
+              {loadingFeedbacks ? (
+                <div className="py-20 text-center"><div className="w-10 h-10 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p className="text-cyan-400 text-xs font-mono animate-pulse">SYNCHRONIZING WITH CLOUD STORAGE...</p></div>
+              ) : feedbacks.length === 0 ? (
+                <div className="bg-white/5 border border-dashed border-white/10 rounded-3xl p-20 text-center">
+                  <p className="text-white/20 font-mono text-sm uppercase tracking-[0.3em]">Aucun retour trouvé pour le moment.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-6">
+                  {feedbacks.map((fb) => (
+                    <div key={fb.id} className="group bg-[#11161d] border border-white/5 hover:border-cyan-500/30 rounded-3xl p-8 transition-all duration-300 shadow-2xl relative overflow-hidden">
+                      {/* Glow Overlay */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[50px] -mr-16 -mt-16 group-hover:bg-cyan-500/10 transition-all" />
+                      
+                      <div className="flex flex-col lg:flex-row gap-8 relative z-10">
+                        {/* Sentiment & User Info */}
+                        <div className="lg:w-1/4 space-y-4">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-4 rounded-2xl bg-white/5 border border-white/10 ${
+                              fb.rating === 'POOR' ? 'text-red-400' :
+                              fb.rating === 'NEUTRAL' ? 'text-amber-400' :
+                              fb.rating === 'GOOD' ? 'text-emerald-400' : 'text-pink-400'
+                            }`}>
+                              {fb.rating === 'POOR' && <Frown className="w-8 h-8" />}
+                              {fb.rating === 'NEUTRAL' && <Meh className="w-8 h-8" />}
+                              {fb.rating === 'GOOD' && <Smile className="w-8 h-8" />}
+                              {fb.rating === 'EXCELLENT' && <Heart className="w-8 h-8" />}
+                            </div>
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-widest text-white/40">Sentiment</p>
+                                <p className="text-lg font-black italic uppercase text-white tracking-tighter">{fb.rating || 'N/A'}</p>
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-3">
+                             <div className="flex items-center gap-2 text-[10px] font-bold text-white/30 uppercase tracking-widest">
+                               <User className="w-3 h-3" /> Envoyé par
+                             </div>
+                             <div>
+                               <p className="text-sm font-bold text-white">{fb.userName || 'Anonyme'}</p>
+                               <p className="text-[10px] font-mono text-cyan-400/60 truncate">{fb.userEmail}</p>
+                             </div>
+                             <div className="flex items-center gap-2 text-[9px] font-mono text-white/20 pt-2 border-t border-white/5">
+                               <Clock className="w-3 h-3" />
+                               {fb.createdAt instanceof Timestamp ? fb.createdAt.toDate().toLocaleString() : 'Date inconnue'}
+                             </div>
+                          </div>
+
+                          {/* Visibility Toggle Button */}
+                          <button
+                            onClick={() => handleToggleVisibility(fb.id, !!fb.isVisible)}
+                            className={`w-full py-3 rounded-xl flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                              fb.isVisible 
+                                ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
+                                : 'bg-white/5 text-white/40 border border-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            {fb.isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                            {fb.isVisible ? "Visible par tous" : "Rendre public"}
+                          </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 space-y-6">
+                           {/* Problem Type Tag */}
+                           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-widest">
+                              <AlertTriangle className="w-3 h-3" /> {fb.problemType || 'Problème non spécifié'}
+                           </div>
+
+                           <div className="space-y-3">
+                              <h4 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-cyan-400/80">
+                                <MessageSquare className="w-3 h-3" /> Observations
+                              </h4>
+                              <p className="text-white/70 text-sm leading-relaxed bg-white/5 p-4 rounded-2xl border border-white/5">
+                                {fb.message || "Aucun message fourni."}
+                              </p>
+                           </div>
+
+                           {fb.solution && (
+                             <div className="space-y-3">
+                               <h4 className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-400/80">
+                                 <Lightbulb className="w-3 h-3" /> Solution suggérée
+                               </h4>
+                               <p className="text-emerald-400/50 text-sm leading-relaxed border border-emerald-500/10 bg-emerald-500/5 p-4 rounded-2xl border-dashed">
+                                 {fb.solution}
+                               </p>
+                             </div>
+                           )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </main>
